@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package balance;
+
+// Request message: sent by balance-gateway to balance-service
+message BalanceRequest {
+  string account_id = 1;
+}
+
+// Response message: returned by balance-service to balance-gateway
+message BalanceResponse {
+  string account_id  = 1;
+  string owner_name  = 2;
+  double balance     = 3;
+  string currency    = 4;
+  string last_updated = 5;
+}
+
+// Service definition
+service BalanceService {
+  rpc GetBalance(BalanceRequest) returns (BalanceResponse);
+}

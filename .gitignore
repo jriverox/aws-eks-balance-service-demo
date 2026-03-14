@@ -1,0 +1,65 @@
+# ====================
+# Terraform
+# ====================
+**/.terraform/
+*.tfstate
+*.tfstate.backup
+*.tfstate.lock.info
+*.tfvars
+!*.tfvars.example
+.terraform.lock.hcl
+terraform.plan
+crash.log
+
+# ====================
+# Python
+# ====================
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+eggs/
+parts/
+var/
+sdist/
+develop-eggs/
+.installed.cfg
+lib/
+lib64/
+
+# Poetry
+.venv/
+poetry.lock
+
+# gRPC generated files (regenerated from proto)
+*_pb2.py
+*_pb2_grpc.py
+
+# ====================
+# Environment & Secrets
+# ====================
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# ====================
+# Docker
+# ====================
+.dockerignore
+
+# ====================
+# OS & IDE
+# ====================
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
+Thumbs.db
