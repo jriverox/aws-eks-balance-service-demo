@@ -4,6 +4,7 @@
 # =============================================================================
 FROM public.ecr.aws/docker/library/python:3.11-slim AS builder
 
+
 WORKDIR /app
 
 # Install system dependencies required by grpcio
