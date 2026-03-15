@@ -513,7 +513,41 @@ aws codebuild start-build \
 
 ---
 
+### Verificar el estatus del Build
+
+```bash
+aws codebuild list-builds-for-project \
+  --project-name balance-dev-pipeline \
+  --region us-east-1 \
+  --query 'ids[0]' \
+  --output text | xargs -I{} aws codebuild batch-get-builds \
+  --ids {} \
+  --region us-east-1 \
+  --query 'builds[0].{status:buildStatus,phase:currentPhase}' \
+  --output table
+```
+
+Si todo salió bien, el resultado del comando deberia ser:
+
+```text
+----------------------------
+|      BatchGetBuilds      |
++------------+-------------+
+|    phase   |   status    |
++------------+-------------+
+|  COMPLETED |  SUCCEEDED  |
++------------+-------------+
+```
+
 ## Validación
+
+Ejecuta el comando:
+
+```bash
+kubectl get ingress -n default
+```
+
+Reemplaza en las siguientes expresiones curl "<ALB-ADDRESS>" por el valor de la columna ADDRESS.
 
 ```bash
 # Health check
