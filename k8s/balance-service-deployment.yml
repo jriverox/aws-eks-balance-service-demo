@@ -38,6 +38,7 @@ spec:
                 ]
             initialDelaySeconds: 10
             periodSeconds: 10
+            timeoutSeconds: 10
           livenessProbe:
             exec:
               command:
@@ -48,3 +49,4 @@ spec:
                 ]
             initialDelaySeconds: 15
             periodSeconds: 20
+            timeoutSeconds: 10

@@ -92,9 +92,29 @@ resource "aws_iam_role_policy" "codebuild" {
           "s3:PutObject"
         ]
         Resource = "arn:aws:s3:::${var.project}-${var.environment}-codebuild-cache/*"
+      },
+      {
+        Sid    = "CodeStarConnection"
+        Effect = "Allow"
+        Action = ["codestar-connections:UseConnection"]
+        Resource = aws_codestarconnections_connection.github.arn
       }
     ]
   })
+}
+
+# -----------------------------------------------------------------------------
+# CodeStar Connection — GitHub
+# Permite a CodeBuild acceder al repositorio de GitHub.
+# IMPORTANTE: Después de `terraform apply`, la conexión queda en estado PENDING.
+# Debes activarla manualmente en:
+# AWS Console → Developer Tools → Settings → Connections → clic en la conexión → "Update pending connection"
+# -----------------------------------------------------------------------------
+resource "aws_codestarconnections_connection" "github" {
+  name          = "${local.name_prefix}-github"
+  provider_type = "GitHub"
+
+  tags = local.common_tags
 }
 
 # -----------------------------------------------------------------------------
@@ -139,9 +159,13 @@ resource "aws_codebuild_project" "main" {
   }
 
   source {
-    type      = "NO_SOURCE"
-    buildspec = file("${path.root}/../../../.codebuild/buildspec.yml")
+    type            = "GITHUB"
+    location        = var.github_repo_url
+    git_clone_depth = 1
+    buildspec       = ".codebuild/buildspec.yml"
   }
+
+  source_version = "main"
 
   logs_config {
     cloudwatch_logs {
@@ -152,3 +176,27 @@ resource "aws_codebuild_project" "main" {
 
   tags = local.common_tags
 }
+
+# -----------------------------------------------------------------------------
+# CodeBuild Webhook — Trigger automático en push a main
+# Requiere que la conexión GitHub (aws_codestarconnections_connection.github)
+# esté en estado Available. Activar en:
+# AWS Console → CodePipeline → Settings → Connections → balance-dev-github → Update pending connection
+# Una vez activada, descomentar este recurso y correr terraform apply.
+# -----------------------------------------------------------------------------
+# resource "aws_codebuild_webhook" "main" {
+#   project_name = aws_codebuild_project.main.name
+#   build_type   = "BUILD"
+#
+#   filter_group {
+#     filter {
+#       type    = "EVENT"
+#       pattern = "PUSH"
+#     }
+#
+#     filter {
+#       type    = "HEAD_REF"
+#       pattern = "^refs/heads/main$"
+#     }
+#   }
+# }

@@ -9,10 +9,10 @@ packages = [{ include = "app" }]
 [tool.poetry.dependencies]
 python = "^3.11"
 grpcio = "^1.62.0"
-protobuf = "^4.25.0"
+protobuf = "^6.31.0"
 
 [tool.poetry.group.dev.dependencies]
-grpcio-tools = "^1.62.0"
+grpcio-tools = "^1.78.0"
 
 [build-system]
 requires = ["poetry-core"]

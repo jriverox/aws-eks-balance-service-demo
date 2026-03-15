@@ -43,10 +43,8 @@ phases:
       - docker push $ECR_BALANCE_GATEWAY_URL:latest
 
       - echo "Deploying to EKS..."
-      - |
-        sed -i "s|BALANCE_SERVICE_IMAGE|$ECR_BALANCE_SERVICE_URL:$IMAGE_TAG|g" k8s/balance-service-deployment.yml
-        sed -i "s|BALANCE_GATEWAY_IMAGE|$ECR_BALANCE_GATEWAY_URL:$IMAGE_TAG|g" k8s/balance-gateway-deployment.yml
-      - kubectl apply -f k8s/
+      - kubectl set image deployment/balance-service balance-service=$ECR_BALANCE_SERVICE_URL:$IMAGE_TAG -n default
+      - kubectl set image deployment/balance-gateway balance-gateway=$ECR_BALANCE_GATEWAY_URL:$IMAGE_TAG -n default
       - echo "Verifying rollout..."
       - kubectl rollout status deployment/balance-service -n default --timeout=120s
       - kubectl rollout status deployment/balance-gateway -n default --timeout=120s

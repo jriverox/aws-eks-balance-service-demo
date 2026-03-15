@@ -57,3 +57,9 @@ variable "node_max_size" {
   type        = number
   default     = 3
 }
+
+variable "github_repo_url" {
+  description = "HTTPS URL of the GitHub repository for CodeBuild source"
+  type        = string
+  default     = "https://github.com/jriverox/aws-eks-balance-service-demo.git"
+}

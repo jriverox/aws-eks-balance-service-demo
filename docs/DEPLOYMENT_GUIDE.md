@@ -434,6 +434,60 @@ Copia el valor de `ADDRESS` — es la URL pública de tu aplicación.
 
 ---
 
+## CI/CD con CodeBuild
+
+El módulo EKS provisiona automáticamente un pipeline de CI/CD en AWS CodeBuild que se activa con cada `push` a la rama `main`.
+
+### Flujo del pipeline
+
+```text
+git push → GitHub Webhook → CodeBuild → docker build → ECR push → kubectl set image → EKS
+```
+
+### Paso 1 — Activar la conexión de GitHub (una sola vez)
+
+Terraform crea la conexión con GitHub, pero AWS requiere una autorización manual por seguridad. Después de `terraform apply`:
+
+1. Ve a **AWS Console → Developer Tools → Settings → Connections**
+2. Busca la conexión `balance-dev-github` (estado: **Pending**)
+3. Haz clic en ella → **"Update pending connection"**
+4. Autoriza el acceso a tu cuenta de GitHub en el popup de OAuth
+
+Una vez activada, el webhook queda configurado automáticamente y cualquier `push` a `main` disparará el pipeline.
+
+### Paso 2 — Verificar el pipeline
+
+Después de hacer un `push` a `main`:
+
+```bash
+# Ver ejecuciones del pipeline
+aws codebuild list-builds-for-project \
+  --project-name balance-dev-pipeline \
+  --region us-east-1
+
+# Ver logs de la última ejecución
+aws codebuild batch-get-builds \
+  --ids $(aws codebuild list-builds-for-project \
+    --project-name balance-dev-pipeline \
+    --query 'ids[0]' --output text) \
+  --region us-east-1 \
+  --query 'builds[0].{status:buildStatus,phase:currentPhase}'
+```
+
+También puedes verlo en **AWS Console → CodeBuild → balance-dev-pipeline**.
+
+### Disparar el pipeline manualmente
+
+Si necesitas hacer un deploy sin hacer push:
+
+```bash
+aws codebuild start-build \
+  --project-name balance-dev-pipeline \
+  --region us-east-1
+```
+
+---
+
 ## Validación
 
 ```bash
@@ -525,6 +579,30 @@ curl -o terraform/modules/eks/policies/alb-controller-policy.json \
 
 cd terraform/environments/dev
 terraform apply -replace="module.eks.aws_iam_policy.alb_controller"
+```
+
+---
+
+### `CrashLoopBackOff` en balance-service con liveness/readiness probe timeout
+
+**Causa:** El `timeoutSeconds` de los probes no estaba definido, por lo que Kubernetes usaba el default de 1 segundo. Con grpcio 1.78.x, arrancar el intérprete Python e importar el módulo `grpc` toma más de 1s, haciendo que el probe siempre falle por timeout. Tras 3 fallos consecutivos, Kubernetes mata el pod.
+
+Para confirmar, ejecuta:
+
+```bash
+kubectl describe pod -n default <nombre-pod-balance-service>
+```
+
+Busca en los eventos:
+
+```text
+Liveness probe failed: command timed out
+```
+
+**Solución:** El manifiesto `k8s/balance-service-deployment.yml` ya incluye `timeoutSeconds: 10` en ambos probes. Si el cluster ya está desplegado, aplica el cambio directamente:
+
+```bash
+kubectl apply -f k8s/balance-service-deployment.yml
 ```
 
 ---
