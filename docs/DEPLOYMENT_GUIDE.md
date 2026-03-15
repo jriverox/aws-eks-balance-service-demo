@@ -455,7 +455,26 @@ Terraform crea la conexión con GitHub, pero AWS requiere una autorización manu
 
 Una vez activada, el webhook queda configurado automáticamente y cualquier `push` a `main` disparará el pipeline.
 
-### Paso 2 — Verificar el pipeline
+### Paso 2 — Autorizar CodeBuild en EKS (una sola vez)
+
+CodeBuild necesita permiso para ejecutar `kubectl` dentro del cluster. Después de `terraform apply`, agrega el role al `aws-auth` ConfigMap:
+
+```bash
+kubectl patch configmap aws-auth -n kube-system --patch '
+{"data":{"mapRoles":"- rolearn: arn:aws:iam::<cuenta>:role/balance-dev-eks-node-role\n  groups:\n  - system:bootstrappers\n  - system:nodes\n  username: system:node:{{EC2PrivateDNSName}}\n- rolearn: arn:aws:iam::<cuenta>:role/balance-dev-codebuild-role\n  groups:\n  - system:masters\n  username: codebuild\n"}}'
+```
+
+> Reemplaza `<cuenta>` con tu AWS account ID (ej. `456102076320`).
+
+Verifica que quedó aplicado:
+
+```bash
+kubectl get configmap aws-auth -n kube-system -o yaml
+```
+
+Debes ver ambos roles: `balance-dev-eks-node-role` y `balance-dev-codebuild-role`.
+
+### Paso 3 — Verificar el pipeline
 
 Después de hacer un `push` a `main`:
 
@@ -604,6 +623,30 @@ Liveness probe failed: command timed out
 ```bash
 kubectl apply -f k8s/balance-service-deployment.yml
 ```
+
+---
+
+### CodeBuild falla con `toomanyrequests` al hacer `docker build`
+
+**Causa:** Docker Hub aplica rate limiting a pulls anónimos desde IPs compartidas de AWS. CodeBuild usa IPs compartidas, por lo que supera el límite rápidamente.
+
+**Solución:** Los Dockerfiles ya usan el mirror público de ECR en lugar de Docker Hub:
+
+```dockerfile
+# Antes (falla en CodeBuild)
+FROM python:3.11-slim
+
+# Después (sin rate limits dentro de AWS)
+FROM public.ecr.aws/docker/library/python:3.11-slim
+```
+
+---
+
+### CodeBuild falla con `Unauthorized` al ejecutar `kubectl`
+
+**Causa:** El role IAM de CodeBuild no está registrado en el `aws-auth` ConfigMap del cluster. EKS requiere que cualquier identidad IAM que ejecute `kubectl` esté explícitamente autorizada.
+
+**Solución:** Agregar el role de CodeBuild al ConfigMap (ver sección [CI/CD con CodeBuild → Paso 2](#paso-2--autorizar-codebuild-en-eks-una-sola-vez)).
 
 ---
 
