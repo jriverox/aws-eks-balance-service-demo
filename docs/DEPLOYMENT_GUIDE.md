@@ -397,7 +397,7 @@ kubectl apply -f k8s/
 
 Output esperado:
 
-```
+```text
 deployment.apps/balance-service created
 deployment.apps/balance-gateway created
 service/balance-service created
@@ -413,7 +413,7 @@ kubectl get pods
 
 Espera hasta que todos estén `1/1 Running`:
 
-```
+```text
 NAME                               READY   STATUS    RESTARTS   AGE
 balance-gateway-xxx                1/1     Running   0          2m
 balance-gateway-xxx                1/1     Running   0          2m
@@ -452,7 +452,7 @@ git push → GitHub Webhook → CodeBuild → docker build → ECR push → kube
 
 Terraform crea la conexión con GitHub, pero AWS requiere una autorización manual por seguridad. Después de `terraform apply`:
 
-1. Ve a **AWS Console → Developer Tools → Settings → Connections**
+1. Ve a **AWS Console → Developer Tools → Settings → Connections** (un link similar a este: <CUENTA>console.aws.amazon.com/codesuite/settings/connections?region=us-east-1)
 2. Busca la conexión `balance-dev-github` (estado: **Pending**)
 3. Haz clic en ella → **"Update pending connection"**
 4. Autoriza el acceso a tu cuenta de GitHub en el popup de OAuth
