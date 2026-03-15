@@ -2,7 +2,7 @@
 # Stage 1 — Builder
 # Installs dependencies, generates gRPC stubs
 # =============================================================================
-FROM python:3.11-slim AS builder
+FROM public.ecr.aws/docker/library/python:3.11-slim AS builder
 
 WORKDIR /app
 
@@ -40,7 +40,7 @@ COPY apps/balance-gateway/app/ ./app/
 # Stage 2 — Runtime
 # Lean image with only production artifacts
 # =============================================================================
-FROM python:3.11-slim AS runtime
+FROM public.ecr.aws/docker/library/python:3.11-slim AS runtime
 
 WORKDIR /app
 
