@@ -34,7 +34,7 @@ log_warn "  ECR Images:     balance-dev-balance-service, balance-dev-balance-gat
 log_warn "  S3 Bucket:      ${S3_BUCKET} (including ALL versions)"
 log_warn "  DynamoDB Table: ${DYNAMODB_TABLE}"
 echo ""
-log_warn "Make sure you have run './scripts/k8s-teardown.sh' and 'terraform destroy' before proceeding."
+log_warn "Make sure you have run './scripts/k8s_cleanup.sh' and 'terraform destroy' before proceeding."
 echo ""
 read -rp "Type 'yes' to confirm: " CONFIRMATION
 
