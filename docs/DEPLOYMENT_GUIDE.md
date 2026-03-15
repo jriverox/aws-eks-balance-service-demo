@@ -271,6 +271,7 @@ En resumen,para limitar el alcance de un posible fallo y reducir el riesgo opera
 Esta separación garantiza que cualquier cambio o error en la configuración de las aplicaciones o servicios (como actualizaciones de versiones gRPC o modificaciones en los Services) quede aislado únicamente en ese dominio. De esta forma, se evita que una modificación rutinaria pueda comprometer la infraestructura crítica, previniendo así una caída general del sistema.
 
 **Nota:** Antes de empezar, asegúrate de:
+
 - estar en la ruta raíz del proyecto (terminal).
 - algunos de los comando a continuación tienen placeholder que debes reemplazar con tus propios valores, ejemplo: `<cuenta>` se refiere a tu cuenta AWS.
 
@@ -356,6 +357,8 @@ ECR_GATEWAY   = balance-dev-balance-gateway
 ```
 
 ### Paso 3 — Construir y pushear
+
+Asegúrate de ejecutar los siguientes comandos en la raiz del proyecto.
 
 ```bash
 make docker-build   # construye imágenes locales
