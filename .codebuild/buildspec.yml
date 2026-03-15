@@ -1,0 +1,54 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      python: 3.11
+    commands:
+      - echo "Installing kubectl..."
+      - curl -LO "https://dl.k8s.io/release/$(curl -Ls https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+      - chmod +x kubectl
+      - mv kubectl /usr/local/bin/
+
+  pre_build:
+    commands:
+      - echo "Authenticating with ECR..."
+      - aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_BALANCE_SERVICE_URL
+
+      - echo "Configuring kubectl for EKS..."
+      - aws eks update-kubeconfig --region $AWS_REGION --name $EKS_CLUSTER_NAME
+
+      - echo "Setting image tags..."
+      - IMAGE_TAG=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c1-8)
+      - echo "Image tag -> $IMAGE_TAG"
+
+  build:
+    commands:
+      - echo "Building balance-service..."
+      - docker build -t $ECR_BALANCE_SERVICE_URL:$IMAGE_TAG -f apps/balance-service/Dockerfile .
+      - docker tag $ECR_BALANCE_SERVICE_URL:$IMAGE_TAG $ECR_BALANCE_SERVICE_URL:latest
+
+      - echo "Building balance-gateway..."
+      - docker build -t $ECR_BALANCE_GATEWAY_URL:$IMAGE_TAG -f apps/balance-gateway/Dockerfile .
+      - docker tag $ECR_BALANCE_GATEWAY_URL:$IMAGE_TAG $ECR_BALANCE_GATEWAY_URL:latest
+
+  post_build:
+    commands:
+      - echo "Pushing balance-service to ECR..."
+      - docker push $ECR_BALANCE_SERVICE_URL:$IMAGE_TAG
+      - docker push $ECR_BALANCE_SERVICE_URL:latest
+
+      - echo "Pushing balance-gateway to ECR..."
+      - docker push $ECR_BALANCE_GATEWAY_URL:$IMAGE_TAG
+      - docker push $ECR_BALANCE_GATEWAY_URL:latest
+
+      - echo "Deploying to EKS..."
+      - |
+        sed -i "s|BALANCE_SERVICE_IMAGE|$ECR_BALANCE_SERVICE_URL:$IMAGE_TAG|g" k8s/balance-service-deployment.yml
+        sed -i "s|BALANCE_GATEWAY_IMAGE|$ECR_BALANCE_GATEWAY_URL:$IMAGE_TAG|g" k8s/balance-gateway-deployment.yml
+      - kubectl apply -f k8s/
+      - echo "Verifying rollout..."
+      - kubectl rollout status deployment/balance-service -n default --timeout=120s
+      - kubectl rollout status deployment/balance-gateway -n default --timeout=120s
+
+      - echo "Pipeline completed successfully."

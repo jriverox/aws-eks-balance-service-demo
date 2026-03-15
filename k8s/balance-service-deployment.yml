@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: balance-service
+  namespace: default
+  labels:
+    app: balance-service
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: balance-service
+  template:
+    metadata:
+      labels:
+        app: balance-service
+    spec:
+      containers:
+        - name: balance-service
+          image: 456102076320.dkr.ecr.us-east-1.amazonaws.com/balance-dev-balance-service:latest
+          ports:
+            - containerPort: 50051
+              protocol: TCP
+          resources:
+            requests:
+              cpu: '100m'
+              memory: '128Mi'
+            limits:
+              cpu: '250m'
+              memory: '256Mi'
+          readinessProbe:
+            exec:
+              command:
+                [
+                  '/bin/sh',
+                  '-c',
+                  'python -c ''import grpc; grpc.channel_ready_future(grpc.insecure_channel("localhost:50051")).result(timeout=5)''',
+                ]
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            exec:
+              command:
+                [
+                  '/bin/sh',
+                  '-c',
+                  'python -c ''import grpc; grpc.channel_ready_future(grpc.insecure_channel("localhost:50051")).result(timeout=5)''',
+                ]
+            initialDelaySeconds: 15
+            periodSeconds: 20

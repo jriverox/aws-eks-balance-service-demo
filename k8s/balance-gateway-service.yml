@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: balance-gateway
+  namespace: default
+  labels:
+    app: balance-gateway
+spec:
+  type: ClusterIP
+  selector:
+    app: balance-gateway
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8000
+      protocol: TCP

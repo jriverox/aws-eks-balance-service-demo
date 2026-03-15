@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # =============================================================================
 # validate_prerequisites.sh
-# Validates all required tools are installed and configured correctly
-# Usage: ./scripts/validate_prerequisites.sh
+# Comprueba que todas las herramientas necesarias estén instaladas y configuradas correctamente
+# Uso: ./scripts/validate_prerequisites.sh
 # =============================================================================
 
 set -euo pipefail
@@ -37,7 +37,7 @@ check() {
 
 echo ""
 echo "==========================================="
-echo "  Prerequisites Validation"
+echo "  Validación de los requisitos previos"
 echo "  aws-eks-balance-service-demo"
 echo "==========================================="
 echo ""
@@ -56,7 +56,7 @@ check "Git"       "git"       "git --version"
 echo ""
 
 # -----------------------------------------------------------------------------
-# AWS credentials check
+# Comprobación de credenciales de AWS
 # -----------------------------------------------------------------------------
 log_info "Checking AWS credentials..."
 if aws sts get-caller-identity &>/dev/null; then
@@ -99,7 +99,7 @@ else
 fi
 
 # -----------------------------------------------------------------------------
-# Summary
+# Mostrar Resumen
 # -----------------------------------------------------------------------------
 echo ""
 echo "==========================================="

@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # =============================================================================
 # bootstrap.sh
-# Creates AWS resources required for Terraform remote state
-# Resources: S3 bucket + DynamoDB table
-# Usage: ./scripts/bootstrap.sh
+# Crea los recursos de AWS necesarios para el estado remoto de Terraform
+# Recursos: S3 bucket + DynamoDB table
+# Ejecución: ./scripts/bootstrap.sh
 # =============================================================================
 
 set -euo pipefail
@@ -26,7 +26,7 @@ log_warn()  { echo -e "${YELLOW}[WARN]${NC}  $1"; }
 log_error() { echo -e "${RED}[ERROR]${NC} $1"; }
 
 # -----------------------------------------------------------------------------
-# Validate AWS CLI is configured
+# Comprueba que la CLI de AWS esté configurada
 # -----------------------------------------------------------------------------
 log_info "Validating AWS credentials..."
 if ! aws sts get-caller-identity &>/dev/null; then
@@ -39,7 +39,7 @@ ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
 log_info "AWS Account: ${ACCOUNT_ID} | Region: ${AWS_REGION}"
 
 # -----------------------------------------------------------------------------
-# Create S3 Bucket
+# Crear Bucket en S3
 # -----------------------------------------------------------------------------
 log_info "Creating S3 bucket: ${S3_BUCKET}..."
 
@@ -80,7 +80,7 @@ else
 fi
 
 # -----------------------------------------------------------------------------
-# Create DynamoDB Table
+# Crear Tabla en DynamoDB
 # -----------------------------------------------------------------------------
 log_info "Creating DynamoDB table: ${DYNAMODB_TABLE}..."
 
@@ -103,7 +103,7 @@ else
 fi
 
 # -----------------------------------------------------------------------------
-# Summary
+# Mostrar resumen
 # -----------------------------------------------------------------------------
 echo ""
 log_info "Bootstrap completed successfully."
@@ -111,4 +111,4 @@ log_info "S3 Bucket:       ${S3_BUCKET}"
 log_info "DynamoDB Table:  ${DYNAMODB_TABLE}"
 log_info "Region:          ${AWS_REGION}"
 echo ""
-log_info "You can now run: cd terraform/environments/dev && terraform init"
+log_info "Listo, ahora puedes ejecutar: cd terraform/environments/dev && terraform init"
