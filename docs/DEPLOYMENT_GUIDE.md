@@ -337,6 +337,10 @@ aws-load-balancer-controller-xxx   1/1   Running   0   2m
 
 ## Construir y Pushear Imágenes a ECR
 
+> **Nota — Primer deploy vs updates:**
+> Este paso es **obligatorio solo la primera vez**. CodeBuild hace `kubectl set image` que requiere que los deployments ya existan en EKS. Para eso, las imágenes deben estar en ECR antes de ejecutar `kubectl apply -f k8s/`.
+> Para deploys posteriores (actualizaciones de código), usa el pipeline de CodeBuild directamente — ver sección [CI/CD con CodeBuild](#cicd-con-codebuild).
+
 ### Paso 1 — Autenticarse en ECR
 
 ```bash
@@ -497,13 +501,15 @@ También puedes verlo en **AWS Console → CodeBuild → balance-dev-pipeline**.
 
 ### Disparar el pipeline manualmente
 
-Si necesitas hacer un deploy sin hacer push:
+Si necesitas hacer un deploy sin hacer push (o en el primer deploy para verificar el pipeline):
 
 ```bash
 aws codebuild start-build \
   --project-name balance-dev-pipeline \
   --region us-east-1
 ```
+
+> **Importante:** El pipeline asume que los deployments ya existen en EKS (creados con `kubectl apply -f k8s/`). Si ejecutas el pipeline antes del primer `kubectl apply`, el paso `kubectl set image` fallará porque no hay deployments que actualizar.
 
 ---
 
