@@ -13,7 +13,7 @@ Guía completa paso a paso para desplegar un cluster de Kubernetes en AWS usando
 7. [Construir y Pushear Imágenes a ECR](#construir-y-pushear-imágenes-a-ecr)
 8. [Despliegue en Kubernetes](#despliegue-en-kubernetes)
 9. [Validación](#validación)
-10. [Teardown — Eliminación de Recursos](#teardown)
+10. [Eliminación de recursos](#eliminación-de-recursos)
 11. [Troubleshooting](#troubleshooting)
 
 ---
@@ -564,7 +564,7 @@ Cuentas de prueba disponibles: `ACC-001`, `ACC-002`, `ACC-003`.
 
 ---
 
-## Eliminación de recursos (Clean-up)
+## Eliminación de recursos
 
 Sigue este orden estrictamente. Si eliminas EKS antes que los recursos de Kubernetes, el ALB queda huérfano y Terraform no puede eliminar la VPC.
 
