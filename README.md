@@ -1,63 +1,54 @@
-# aws-eks-balance-service-demo
+# AWS EKS Balance Service Demo
 
-Demostración de arquitectura cloud-native en AWS con dos microservicios Python que se comunican via gRPC, desplegados en un cluster EKS usando módulos reutilizables de Terraform.
-
-## Descripción
-
-Este proyecto implementa un servicio de consulta de saldos bancarios como caso de uso para demostrar patrones modernos de infraestructura en AWS:
-
-- Dos microservicios Python que se comunican via **gRPC**
-- Infraestructura como código con **módulos reutilizables de Terraform**
-- Despliegue en **Amazon EKS** expuesto via **Application Load Balancer**
-- Pipeline de **CI/CD con AWS CodeBuild**
-- Imágenes almacenadas en **Amazon ECR**
-- Estado remoto de Terraform en **S3 + DynamoDB**
-
-> Nota: próposito de este proyecto no es demostrar como funciona el codigo de los dos servicios en python, considerar que estos servicios son solo con fines educativos, por esta razón son extremadamente simples sin considerar las mejores prácticas de cualquier aplicación del mundo real.
+Este repositorio implementa una arquitectura cloud-native de referencia en Amazon EKS, orquestada íntegramente mediante Terraform. El proyecto se centra en demostrar principios avanzados de **\*_Infraestructura como Código (IaC)_** y **_CI/CD_** automatizado con AWS CodeBuild. Aunque incluye dos microservicios funcionales en Python (FastAPI + gRPC), estos sirven como vehículos educativos para validar el flujo de tráfico North-South (vía ALB) y la comunicación interna East-West (vía gRPC) dentro de una VPC segmentada.
 
 ---
 
-## Arquitectura
+## 🛠️ Stack Tecnológico
 
-```
-Internet
-    │
-    ▼
-[ ALB - Application Load Balancer ]        ← Subnet Pública (us-east-1a / us-east-1b)
-    │
-    ▼
-[ balance-gateway ] (FastAPI :8000)        ← Subnet Privada
-    │  HTTP → gRPC
-    ▼
-[ balance-service ] (gRPC :50051)          ← Subnet Privada
-```
-
-### Componentes
-
-| Componente      | Tecnología       | Descripción                          |
-| --------------- | ---------------- | ------------------------------------ |
-| balance-gateway | Python / FastAPI | API REST que traduce HTTP a gRPC     |
-| balance-service | Python / gRPC    | Servidor gRPC con lógica de negocio  |
-| Networking      | Terraform Module | VPC, subnets, NAT Gateway, IGW       |
-| EKS             | Terraform Module | Cluster Kubernetes, node group, IRSA |
-| CI/CD           | AWS CodeBuild    | Build, push a ECR y deploy a EKS     |
-| Registro        | Amazon ECR       | Almacenamiento de imágenes Docker    |
-
-### Diagrama de Red
-
-```
-VPC: 10.0.0.0/16
-├── Subnet Pública us-east-1a  (10.0.1.0/24)  → ALB, NAT Gateway
-├── Subnet Pública us-east-1b  (10.0.2.0/24)  → ALB
-├── Subnet Privada us-east-1a  (10.0.10.0/24) → EKS Nodes
-└── Subnet Privada us-east-1b  (10.0.11.0/24) → EKS Nodes
-```
-
-Los nodos EKS viven en subnets privadas y acceden a internet via NAT Gateway. El ALB vive en las subnets públicas y enruta tráfico hacia los pods.
+- **Lenguajes:** Python 3.11 (FastAPI para Gateway, gRPC para Service).
+- **Infraestructura:** Terraform (Módulos reutilizables y estado remoto en S3/DynamoDB).
+- **Orquestación:** Amazon EKS (Kubernetes 1.29+).
+- **Networking:** AWS VPC (Multi-AZ), Application Load Balancer (ALB).
+- **CI/CD:** AWS CodeBuild & Amazon ECR.
+- **Automatización:** Bash Scripting para validación y despliegue.
 
 ---
 
-## Estructura del Repositorio
+## 🚀 Inicio Rápido (Operación)
+
+Para un despliegue detallado paso a paso, consulte la [**Guía de Despliegue (DEPLOYMENT_GUIDE.md)**](./DEPLOYMENT_GUIDE.md).
+
+### 1. Validar Entorno Local
+
+Asegúrese de cumplir con los pre-requisitos antes de iniciar:
+
+```bash
+./scripts/validate_prerequisites.sh
+```
+
+### 2. Bootstrap de Estado Remoto:
+
+```bash
+./scripts/bootstrap.sh
+```
+
+### 3. Desplegar con Terraform:
+
+```bash
+cd terraform/environments/dev
+terraform init && terraform apply
+```
+
+### 4. Pruebas de Humo
+
+```bash
+curl http://<ALB_URL>/balance/ACC-001
+```
+
+---
+
+## 📂 Estructura del Proyecto
 
 ```
 aws-eks-balance-service-demo/
@@ -100,150 +91,43 @@ aws-eks-balance-service-demo/
 
 ---
 
-## Stack Tecnológico
+## 🌐 Arquitectura de Red y Flujo de Tráfico
 
-**Aplicaciones**
+La red se ha diseñado siguiendo el principio de Defensa en Profundidad, segmentando el tráfico en capas lógicas para minimizar la superficie de ataque.
 
-- Python 3.11
-- FastAPI + Uvicorn
-- gRPC / Protocol Buffers
-- Poetry (gestión de dependencias)
+### 1. Segmentación de Red (Justificación)
 
-**Infraestructura**
+- Subredes Públicas: Alojan exclusivamente el ALB y el NAT Gateway. Actúan como la zona de amortiguación perimetral.
 
-- Terraform >= 1.5
-- AWS EKS (Kubernetes 1.29)
-- AWS VPC, ALB, ECR, CodeBuild
-- Helm (AWS Load Balancer Controller)
+- Subredes Privadas: Alojan los nodos de cómputo de EKS y las aplicaciones. Esto garantiza que el backend sea invisible desde Internet, cumpliendo con los estándares de seguridad para servicios financieros.
 
-**Contenedores**
+### 2. Flujo de Tráfico y Comunicación gRPC
 
-- Docker multi-stage builds
-- Multi-platform (linux/amd64 + linux/arm64)
+La arquitectura distingue claramente entre dos tipos de flujos:
 
----
+- Flujo North-South (Ingreso): El tráfico externo llega al ALB (Subred Pública). Este realiza la terminación TLS/SSL y redirige la petición vía HTTP/1.1 al balance-gateway en la subred privada.
 
-## Inicio Rápido
+- Flujo East-West (Comunicación Interna gRPC): El balance-gateway traduce la solicitud y se comunica con el balance-service mediante gRPC sobre HTTP/2.
+  - Justificación: Esta comunicación ocurre estrictamente dentro del clúster (ClusterIP). Al usar gRPC interno, se reduce la latencia, se mejora el rendimiento mediante la multiplexación de HTTP/2 y se asegura que los datos críticos de balance nunca abandonen la red privada.
 
-### Prerequisitos
+### 🔒 Seguridad y Resiliencia
 
-Asegúrate de tener instalado: AWS CLI v2, Docker, kubectl, Terraform >= 1.5, Poetry, Python 3.11+, Helm y Git.
+Multi-AZ: Despliegue en us-east-1a y us-east-1b para tolerancia a fallos.
 
-Valida todo con un solo comando:
+Salida Controlada: Los nodos acceden a servicios como ECR para pull de imágenes únicamente a través de NAT Gateways.
 
-```bash
-./scripts/validate_prerequisites.sh
-```
-
-### Despliegue en AWS
-
-Para la guía detallada paso a paso con explicaciones, troubleshooting y notas importantes, consulta **[docs/DEPLOYMENT_GUIDE.md](docs/DEPLOYMENT_GUIDE.md)**.
+Security Groups: Implementados como firewalls a nivel de instancia, permitiendo solo el tráfico necesario (Puerto 8000 para el Gateway y 50051 para el Service).
 
 ---
 
-## Uso Local
+## ⚙️ Automatización (Scripts)
 
-```bash
-# Instalar dependencias
-cd apps/balance-service && poetry install
-cd ../balance-gateway && poetry install
-cd ../..
+- ./scripts/validate_prerequisites.sh: Verifica versiones de Terraform, AWS CLI, Docker, etc.
 
-# Generar stubs de gRPC
-make proto
+- ./scripts/bootstrap.sh: Configura el S3 y DynamoDB para el estado remoto.
 
-# Ejecutar servicios localmente
-make run-service   # Terminal 1 — gRPC :50051
-make run-gateway   # Terminal 2 — HTTP :8000
+- ./scripts/generate_proto.sh: Automatiza la generación de stubs de Python para gRPC.
 
-# Probar
-curl http://localhost:8000/health
-curl http://localhost:8000/balance/ACC-001
-
-# O con Docker
-make docker-build && make docker-run
-```
-
-### Cuentas de prueba
-
-| Account ID | Owner         | Balance    |
-| ---------- | ------------- | ---------- |
-| ACC-001    | Alice Johnson | $15,420.50 |
-| ACC-002    | Bob Smith     | $8,930.75  |
-| ACC-003    | Carol White   | $32,100.00 |
+- ./scripts/k8s_cleanup.sh: Asegura el borrado de recursos de K8s para una destrucción limpia de la infra.
 
 ---
-
-## Módulos de Terraform
-
-### Módulo Networking
-
-```hcl
-module "networking" {
-  source = "./modules/networking"
-
-  project             = "balance"
-  environment         = "dev"
-  vpc_cidr            = "10.0.0.0/16"
-  public_subnet_cidrs = ["10.0.1.0/24", "10.0.2.0/24"]
-  private_subnet_cidrs = ["10.0.10.0/24", "10.0.11.0/24"]
-  availability_zones  = ["us-east-1a", "us-east-1b"]
-}
-```
-
-**Recursos creados:** VPC, Internet Gateway, 2 subnets públicas, 2 subnets privadas, NAT Gateway, Elastic IP, route tables.
-
-### Módulo EKS
-
-```hcl
-module "eks" {
-  source = "./modules/eks"
-
-  project              = "balance"
-  environment          = "dev"
-  vpc_id               = module.networking.vpc_id
-  private_subnet_ids   = module.networking.private_subnet_ids
-  public_subnet_ids    = module.networking.public_subnet_ids
-  cluster_version      = "1.29"
-  node_instance_type   = "t3.medium"
-  desired_node_count   = 2
-}
-```
-
-**Recursos creados:** EKS cluster, node group, IAM roles, OIDC provider, IRSA para ALB Controller, repositorios ECR, proyecto CodeBuild, CloudWatch log group.
-
----
-
-## Eliminación de los recursos
-
-```bash
-# 1. Eliminar recursos de Kubernetes y ALB
-./scripts/k8s_cleanup.sh
-
-# 2. Destruir infraestructura
-cd terraform/environments/dev && terraform destroy
-
-# 3. Eliminar recursos de bootstrap
-cd ../../.. && ./scripts/cleanup.sh
-```
-
----
-
-## Makefile — Comandos disponibles
-
-| Comando             | Descripción                              |
-| ------------------- | ---------------------------------------- |
-| `make proto`        | Genera stubs de gRPC desde balance.proto |
-| `make install`      | Instala dependencias de ambos servicios  |
-| `make run-service`  | Ejecuta balance-service localmente       |
-| `make run-gateway`  | Ejecuta balance-gateway localmente       |
-| `make docker-build` | Construye imágenes Docker                |
-| `make docker-run`   | Levanta contenedores en red local        |
-| `make docker-stop`  | Detiene los contenedores                 |
-| `make docker-push`  | Construye multi-platform y pushea a ECR  |
-
----
-
-## Licencia
-
-MIT
